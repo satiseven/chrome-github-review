@@ -1,0 +1,24 @@
+{
+  "name": "codereview",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "npx tailwindcss -i ./src/popup.css -o ./dist/popup.css",
+    "build:ts": "npx tsc",
+    "build": "npm run build:css && npm run build:ts",
+    "watch:css": "npx tailwindcss -i ./src/popup.css -o ./dist/popup.css --watch",
+    "watch:ts": "npx tsc --watch",
+    "start": "npm-run-all --parallel watch:css watch:ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/chrome": "^0.0.271",
+    "global": "^4.4.0",
+    "npm-run-all": "^4.1.5",
+    "tailwindcss": "^3.4.12",
+    "typescript": "^5.6.2"
+  }
+}
