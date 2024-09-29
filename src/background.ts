@@ -1,8 +1,43 @@
-async function fetchChatGPTResponse(commitMessage: string): Promise<string> {
-  const apiKey = "AIzaSyAa0sTiqzUfUFYaeb4_UddzIakRb_rzpvc";
+interface CommitDetails {
+  commitMessage: string;
+  commitHash: string;
+  fileChanges: Array<FileChange>;
+}
+
+interface FileChange {
+  filename: string;
+  changes: string;
+}
+
+async function fetchChatGPTResponse(
+  commitDetails: CommitDetails,
+): Promise<string> {
+  const apiKey = "";
   const link = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-  console.log(commitMessage);
+
   try {
+    // Handle undefined fileChanges safely
+    const fileChanges =
+      commitDetails.fileChanges && Array.isArray(commitDetails.fileChanges)
+        ? commitDetails.fileChanges
+        : [];
+
+    const prompt = `
+    Commit Message: ${commitDetails.commitMessage}
+    Commit Hash: ${commitDetails.commitHash}
+    Changed Files: 
+    ${fileChanges
+      .map(
+        (file: FileChange) => `
+      File: ${file.filename}
+      Changes: 
+      ${file.changes}
+    `,
+      )
+      .join("\n")}
+    Please review this commit.
+  `;
+    console.log("Prompt:", prompt);
     const response = await fetch(link, {
       method: "POST",
       headers: {
@@ -13,7 +48,7 @@ async function fetchChatGPTResponse(commitMessage: string): Promise<string> {
           {
             parts: [
               {
-                text: commitMessage,
+                text: prompt,
               },
             ],
           },
@@ -33,11 +68,11 @@ async function fetchChatGPTResponse(commitMessage: string): Promise<string> {
     return "Error fetching the review.";
   }
 }
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Received message in background script:", message);
 
   if (message.type === "review-commit") {
+    // Perform asynchronous task
     fetchChatGPTResponse(message.commitMessage)
       .then((review) => {
         console.log("Fetched review:", review);
@@ -49,6 +84,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
 
     // Return true to indicate asynchronous response
-    return true;
+    return true; // Important! Keeps the message channel open for sendResponse
   }
 });

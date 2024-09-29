@@ -1,36 +1,47 @@
-// Check if we're on a GitHub commit page and extract commit details
-if (
-  window.location.href.includes("github.com") &&
-  window.location.href.includes("/commit/")
-) {
+function extractCommitDetails() {
   const commitMessageElement = document.querySelector(".commit-title");
-  const commitHashElement = document.querySelector(".sha");
-  const fileChanges = Array.from(document.querySelectorAll(".file")).map(
-    (file) => {
-      const filename =
-        file.querySelector(".file-header .file-info a")?.textContent || "";
-      const changes = file.querySelector(".file")?.textContent || ""; // You might want to customize how you extract changes
-      return { filename, changes };
-    },
-  );
-
   const commitMessage =
     commitMessageElement && commitMessageElement.textContent
       ? commitMessageElement.textContent.trim()
       : "No commit message found";
+
+  const commitHashElement = document.querySelector(".sha");
   const commitHash =
-    commitHashElement && commitMessageElement?.textContent
-      ? commitHashElement?.textContent?.trim()
+    commitHashElement && commitHashElement.textContent
+      ? commitHashElement.textContent.trim()
       : "No commit hash found";
 
-  // Log the extracted information
-  console.log("Commit Message:", commitMessage);
-  console.log("Commit Hash:", commitHash);
-  console.log("Changed Files:", fileChanges);
+  const fileChanges = Array.from(document.querySelectorAll(".file")).map(
+    (file) => {
+      const filename =
+        file.querySelector(".file-header .file-info a")?.textContent || "";
+      const changes = Array.from(file.querySelectorAll(".blob-code"))
+        .map((line) => line.textContent?.trim() || "")
+        .join("\n");
+      return { filename, changes };
+    },
+  );
 
-  // Send the extracted information to the background script for further processing
+  return { commitMessage, commitHash, fileChanges };
+}
+
+if (
+  window.location.href.includes("github.com") &&
+  window.location.href.includes("/commit/")
+) {
+  const commitDetails = extractCommitDetails();
+
+  console.log("Commit Message:", commitDetails.commitMessage);
+  console.log("Commit Hash:", commitDetails.commitHash);
+  console.log("Changed Files:", commitDetails.fileChanges);
+
   chrome.runtime.sendMessage(
-    { type: "commit-detected", commitMessage, commitHash, fileChanges },
+    {
+      type: "review-commit",
+      commitMessage: commitDetails.commitMessage,
+      commitHash: commitDetails.commitHash,
+      fileChanges: commitDetails.fileChanges,
+    },
     (response) => {
       console.log("Response from background:", response);
     },
